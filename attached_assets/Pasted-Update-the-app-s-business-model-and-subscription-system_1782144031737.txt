@@ -1,0 +1,75 @@
+Update the app's business model and subscription system with the following changes:
+
+PRICING
+
+1. Free Plan
+- Up to 50 clothing items in wardrobe
+- Basic AI outfit recommendations
+- Weather-based outfit suggestions
+- Outfit history and saved outfits
+- No credit card required
+
+2. Plus Plan
+- $4.99/month
+OR
+- $39.99/year
+
+Plus features:
+- Unlimited wardrobe items
+- Advanced AI stylist recommendations
+- Occasion-based outfit generation
+- Smart packing lists for trips
+- Style insights and wardrobe analytics
+- Priority AI processing
+
+3. Founder's Lifetime Plan
+- One-time payment of $49
+- Available only for early adopters
+- Includes all Plus features forever
+
+APP POSITIONING
+
+The app should focus on:
+"Tell me what to wear in 5 seconds."
+
+Instead of emphasizing wardrobe organization, the home screen should immediately provide actionable outfit recommendations based on:
+- Current weather
+- User's wardrobe
+- Planned events/occasions
+- Style preferences
+
+Example recommendation:
+"72°F today. Wear your navy chinos, white Oxford shirt, and brown loafers."
+
+FEATURE GATING
+
+Free Users:
+- Maximum 50 clothing items
+- Basic outfit recommendations
+- Limited AI styling features
+
+Paid Users:
+- Unlimited clothing items
+- Advanced AI stylist
+- Unlimited outfit generation
+- Occasion-specific outfits
+- Travel packing assistant
+- Wardrobe analytics
+- Premium features
+
+ONBOARDING
+
+Optimize onboarding to reduce friction:
+- Emphasize AI-powered automatic clothing recognition from photos
+- Minimize manual data entry
+- Make wardrobe creation as fast as possible
+- Highlight how quickly users can get personalized outfit recommendations
+
+UI CHANGES
+
+- Update pricing page with the new plans
+- Add comparison table between Free, Plus, and Lifetime
+- Create attractive upgrade prompts that focus on value rather than restrictions
+- Emphasize convenience, time savings, and personalized styling
+
+Maintain a modern, premium look and ensure all subscription logic, feature gates, and pricing displays are updated throughout the app.
