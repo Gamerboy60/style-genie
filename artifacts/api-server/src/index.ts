@@ -36,12 +36,17 @@ if (!rawPort) throw new Error("PORT environment variable is required");
 const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
 
-await initStripe();
-
+// Start listening FIRST so the healthcheck passes immediately,
+// then initialize Stripe in the background.
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
   }
   logger.info({ port }, "Server listening");
+
+  // Non-blocking — Stripe init failure never crashes the server
+  initStripe().catch((err) => {
+    logger.error({ err }, "Unexpected error during Stripe init");
+  });
 });
