@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Wardrobe AI API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: clothing
+    description: Clothing item operations
+  - name: outfits
+    description: Outfit operations
+  - name: storage
+    description: Object storage operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,215 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /clothing:
+    get:
+      operationId: listClothingItems
+      tags: [clothing]
+      summary: List all clothing items
+      responses:
+        "200":
+          description: List of clothing items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClothingItem"
+    post:
+      operationId: createClothingItem
+      tags: [clothing]
+      summary: Create a clothing item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClothingItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClothingItem"
+
+  /clothing/{id}:
+    get:
+      operationId: getClothingItem
+      tags: [clothing]
+      summary: Get a clothing item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Clothing item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClothingItem"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateClothingItem
+      tags: [clothing]
+      summary: Update a clothing item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClothingItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClothingItem"
+    delete:
+      operationId: deleteClothingItem
+      tags: [clothing]
+      summary: Delete a clothing item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /clothing/{id}/analyze:
+    post:
+      operationId: analyzeClothingItem
+      tags: [clothing]
+      summary: AI-analyze a clothing item image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClothingItem"
+
+  /clothing/stats:
+    get:
+      operationId: getWardrobeStats
+      tags: [clothing]
+      summary: Get wardrobe statistics
+      responses:
+        "200":
+          description: Wardrobe stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WardrobeStats"
+
+  /outfits:
+    get:
+      operationId: listOutfits
+      tags: [outfits]
+      summary: List all saved outfits
+      responses:
+        "200":
+          description: List of outfits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Outfit"
+    post:
+      operationId: createOutfit
+      tags: [outfits]
+      summary: Save an outfit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OutfitInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Outfit"
+
+  /outfits/generate:
+    post:
+      operationId: generateOutfit
+      tags: [outfits]
+      summary: AI-generate outfit suggestions from wardrobe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OutfitGenerateInput"
+      responses:
+        "200":
+          description: Generated outfit suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutfitSuggestion"
+
+  /outfits/{id}:
+    delete:
+      operationId: deleteOutfit
+      tags: [outfits]
+      summary: Delete a saved outfit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +249,188 @@ components:
       required:
         - status
 
+    ClothingItem:
+      type: object
+      required: [id, name, category, imageUrl, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        color:
+          type: ["string", "null"]
+        style:
+          type: ["string", "null"]
+        occasion:
+          type: ["string", "null"]
+        season:
+          type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        imageUrl:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        analyzed:
+          type: boolean
+        createdAt:
+          type: string
+
+    ClothingItemInput:
+      type: object
+      required: [name, category, imageUrl]
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        color:
+          type: string
+        style:
+          type: string
+        occasion:
+          type: string
+        season:
+          type: string
+        brand:
+          type: string
+        notes:
+          type: string
+        imageUrl:
+          type: string
+        imagePath:
+          type: string
+
+    ClothingItemUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        color:
+          type: string
+        style:
+          type: string
+        occasion:
+          type: string
+        season:
+          type: string
+        brand:
+          type: string
+        notes:
+          type: string
+        imageUrl:
+          type: string
+        imagePath:
+          type: string
+        analyzed:
+          type: boolean
+
+    WardrobeStats:
+      type: object
+      required: [totalItems, byCategory, byColor, bySeason]
+      properties:
+        totalItems:
+          type: integer
+        byCategory:
+          type: object
+          additionalProperties:
+            type: integer
+        byColor:
+          type: object
+          additionalProperties:
+            type: integer
+        bySeason:
+          type: object
+          additionalProperties:
+            type: integer
+
+    Outfit:
+      type: object
+      required: [id, name, clothingItemIds, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        occasion:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        clothingItemIds:
+          type: array
+          items:
+            type: integer
+        clothingItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClothingItem"
+        createdAt:
+          type: string
+
+    OutfitInput:
+      type: object
+      required: [name, clothingItemIds]
+      properties:
+        name:
+          type: string
+        occasion:
+          type: string
+        notes:
+          type: string
+        clothingItemIds:
+          type: array
+          items:
+            type: integer
+
+    OutfitSuggestion:
+      type: object
+      required: [clothingItems, reasoning, occasion, style]
+      properties:
+        clothingItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClothingItem"
+        reasoning:
+          type: string
+        occasion:
+          type: string
+        style:
+          type: string
+
+    OutfitGenerateInput:
+      type: object
+      properties:
+        occasion:
+          type: string
+        mood:
+          type: string
+        weather:
+          type: string
+        count:
+          type: integer
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
