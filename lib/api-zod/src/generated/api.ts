@@ -242,6 +242,51 @@ export const DeleteOutfitParams = zod.object({
 
 
 /**
+ * @summary List all products with prices
+ */
+export const GetStripePlansResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "metadata": zod.record(zod.string(), zod.string()),
+  "prices": zod.array(zod.object({
+  "id": zod.string(),
+  "unit_amount": zod.number().nullable(),
+  "currency": zod.string(),
+  "recurring": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.string())
+}))
+}))
+})
+
+
+/**
+ * @summary Create a Stripe checkout session
+ */
+export const CreateCheckoutSessionBody = zod.object({
+  "priceId": zod.string(),
+  "email": zod.string().optional()
+})
+
+export const CreateCheckoutSessionResponse = zod.object({
+  "url": zod.string().nullable()
+})
+
+
+/**
+ * @summary Create a Stripe billing portal session
+ */
+export const CreatePortalSessionBody = zod.object({
+  "customerId": zod.string()
+})
+
+export const CreatePortalSessionResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
  * @summary Request a presigned upload URL
  */
 export const RequestUploadUrlBody = zod.object({

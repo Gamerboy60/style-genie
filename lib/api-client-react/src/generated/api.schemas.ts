@@ -105,6 +105,56 @@ export interface OutfitGenerateInput {
   count?: number;
 }
 
+/**
+ * @nullable
+ */
+export type StripePriceRecurring = { [key: string]: unknown } | null;
+
+export type StripePriceMetadata = {[key: string]: string};
+
+export interface StripePrice {
+  id: string;
+  /** @nullable */
+  unit_amount: number | null;
+  currency: string;
+  /** @nullable */
+  recurring?: StripePriceRecurring;
+  metadata: StripePriceMetadata;
+}
+
+export type StripePlanMetadata = {[key: string]: string};
+
+export interface StripePlan {
+  id: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  metadata: StripePlanMetadata;
+  prices: StripePrice[];
+}
+
+export interface StripePlansResponse {
+  data: StripePlan[];
+}
+
+export interface CheckoutSessionInput {
+  priceId: string;
+  email?: string;
+}
+
+export interface CheckoutSessionResponse {
+  /** @nullable */
+  url: string | null;
+}
+
+export interface PortalSessionInput {
+  customerId: string;
+}
+
+export interface PortalSessionResponse {
+  url: string;
+}
+
 export interface UploadUrlRequest {
   name: string;
   size: number;

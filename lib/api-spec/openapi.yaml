@@ -16,6 +16,8 @@ tags:
     description: Outfit operations
   - name: storage
     description: Object storage operations
+  - name: stripe
+    description: Stripe billing operations
 paths:
   /healthz:
     get:
@@ -220,6 +222,57 @@ paths:
         "204":
           description: Deleted
 
+  /stripe/plans:
+    get:
+      operationId: getStripePlans
+      tags: [stripe]
+      summary: List all products with prices
+      responses:
+        "200":
+          description: Plans list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripePlansResponse"
+
+  /stripe/checkout:
+    post:
+      operationId: createCheckoutSession
+      tags: [stripe]
+      summary: Create a Stripe checkout session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutSessionInput"
+      responses:
+        "200":
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSessionResponse"
+
+  /stripe/portal:
+    post:
+      operationId: createPortalSession
+      tags: [stripe]
+      summary: Create a Stripe billing portal session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortalSessionInput"
+      responses:
+        "200":
+          description: Portal URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortalSessionResponse"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -414,6 +467,82 @@ components:
           type: string
         count:
           type: integer
+
+    StripePrice:
+      type: object
+      required: [id, unit_amount, currency, metadata]
+      properties:
+        id:
+          type: string
+        unit_amount:
+          type: ["integer", "null"]
+        currency:
+          type: string
+        recurring:
+          type: ["object", "null"]
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    StripePlan:
+      type: object
+      required: [id, name, prices, metadata]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        prices:
+          type: array
+          items:
+            $ref: "#/components/schemas/StripePrice"
+
+    StripePlansResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StripePlan"
+
+    CheckoutSessionInput:
+      type: object
+      required: [priceId]
+      properties:
+        priceId:
+          type: string
+        email:
+          type: string
+
+    CheckoutSessionResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: ["string", "null"]
+
+    PortalSessionInput:
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: string
+
+    PortalSessionResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
 
     UploadUrlRequest:
       type: object
