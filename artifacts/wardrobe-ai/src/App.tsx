@@ -7,6 +7,7 @@ import Wardrobe from "@/pages/wardrobe";
 import Analyze from "@/pages/analyze";
 import Stats from "@/pages/stats";
 import Outfits from "@/pages/outfits";
+import Pricing from "@/pages/pricing";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/analyze" component={Analyze} />
       <Route path="/outfits" component={Outfits} />
       <Route path="/stats" component={Stats} />
+      <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
   );

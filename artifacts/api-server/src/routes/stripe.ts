@@ -7,7 +7,14 @@ const router = Router();
 // Get all plans (products with prices)
 router.get("/stripe/plans", async (req, res) => {
   try {
-    const rows = await stripeStorage.listProductsWithPrices();
+    let rows: Record<string, unknown>[];
+    try {
+      rows = await stripeStorage.listProductsWithPrices() as Record<string, unknown>[];
+    } catch {
+      // Stripe not connected yet — return empty list; frontend uses hardcoded fallbacks
+      res.json({ data: [] });
+      return;
+    }
 
     const productsMap = new Map<string, {
       id: string; name: string; description: string | null;

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Shirt, Sparkles, LayoutGrid, BarChart2 } from "lucide-react";
+import { Shirt, Sparkles, LayoutGrid, BarChart2, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -14,6 +14,7 @@ export function Layout({ children }: LayoutProps) {
     { href: "/analyze", label: "Analyze", icon: Sparkles },
     { href: "/outfits", label: "Outfits", icon: LayoutGrid },
     { href: "/stats", label: "Stats", icon: BarChart2 },
+    { href: "/pricing", label: "Pricing", icon: Crown },
   ];
 
   return (
