@@ -23,16 +23,17 @@ export default function Pricing() {
   };
 
   // Find actual prices from Stripe or fallback
-  const plusPlan = plans?.find(p => p.metadata?.plan === 'plus');
-  const lifetimePlan = plans?.find(p => p.metadata?.plan === 'lifetime');
+  const plansList = plans?.data ?? [];
+  const plusPlan = plansList.find(p => p.metadata?.plan === 'plus');
+  const lifetimePlan = plansList.find(p => p.metadata?.plan === 'lifetime');
 
   const monthlyPrice = plusPlan?.prices?.find(p => p.metadata?.billing === 'monthly')?.id || "price_dummy_monthly";
   const yearlyPrice = plusPlan?.prices?.find(p => p.metadata?.billing === 'yearly')?.id || "price_dummy_yearly";
   const lifetimePrice = lifetimePlan?.prices?.find(p => p.metadata?.billing === 'lifetime')?.id || "price_dummy_lifetime";
 
-  const monthlyAmount = plusPlan?.prices?.find(p => p.metadata?.billing === 'monthly')?.unit_amount ? (plusPlan.prices.find(p => p.metadata?.billing === 'monthly')!.unit_amount / 100) : 4.99;
-  const yearlyAmount = plusPlan?.prices?.find(p => p.metadata?.billing === 'yearly')?.unit_amount ? (plusPlan.prices.find(p => p.metadata?.billing === 'yearly')!.unit_amount / 100) : 39.99;
-  const lifetimeAmount = lifetimePlan?.prices?.find(p => p.metadata?.billing === 'lifetime')?.unit_amount ? (lifetimePlan.prices.find(p => p.metadata?.billing === 'lifetime')!.unit_amount / 100) : 49.00;
+  const monthlyAmount = plusPlan?.prices?.find(p => p.metadata?.billing === 'monthly')?.unit_amount ? ((plusPlan.prices.find(p => p.metadata?.billing === 'monthly')!.unit_amount ?? 499) / 100) : 4.99;
+  const yearlyAmount = plusPlan?.prices?.find(p => p.metadata?.billing === 'yearly')?.unit_amount ? ((plusPlan.prices.find(p => p.metadata?.billing === 'yearly')!.unit_amount ?? 3999) / 100) : 39.99;
+  const lifetimeAmount = lifetimePlan?.prices?.find(p => p.metadata?.billing === 'lifetime')?.unit_amount ? ((lifetimePlan.prices.find(p => p.metadata?.billing === 'lifetime')!.unit_amount ?? 4900) / 100) : 49.00;
 
   return (
     <Layout>
