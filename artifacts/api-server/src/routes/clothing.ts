@@ -11,10 +11,12 @@ import {
   AnalyzeClothingItemParams,
 } from "@workspace/api-zod";
 import { GoogleGenAI } from "@google/genai";
+import { ObjectStorageService } from "../lib/objectStorage";
 
 const router = Router();
 
 const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const objectStorageService = new ObjectStorageService();
 
 function toClothingItemResponse(item: typeof clothingItems.$inferSelect) {
   return {
@@ -156,16 +158,39 @@ router.post("/clothing/:id/analyze", async (req, res) => {
       return;
     }
 
-    const imageUrl = item.imagePath
-      ? `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "http://localhost:80"}/api/storage${item.imagePath}`
-      : item.imageUrl;
+    let base64Image: string;
+    let mimeType: string;
 
-    // Fetch image and convert to base64 for Gemini inline data
-    const imageResp = await fetch(imageUrl);
-    if (!imageResp.ok) throw new Error(`Failed to fetch image: ${imageResp.status}`);
-    const imageBuffer = await imageResp.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString("base64");
-    const mimeType = imageResp.headers.get("content-type") ?? "image/jpeg";
+    if (item.imagePath) {
+      // Read directly from object storage — avoids any HTTP round-trip and works
+      // identically in dev and production regardless of domain/port differences.
+      req.log.info({ imagePath: item.imagePath }, "Loading image from object storage");
+      const objectFile = await objectStorageService.getObjectEntityFile(item.imagePath);
+      const [metadata] = await objectFile.getMetadata();
+      mimeType = (metadata.contentType as string | undefined) ?? "image/jpeg";
+
+      const chunks: Buffer[] = [];
+      await new Promise<void>((resolve, reject) => {
+        const stream = objectFile.createReadStream();
+        stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+        stream.on("end", resolve);
+        stream.on("error", reject);
+      });
+      const imageBuffer = Buffer.concat(chunks);
+      base64Image = imageBuffer.toString("base64");
+      req.log.info({ bytes: imageBuffer.length, mimeType }, "Image loaded from storage");
+    } else if (item.imageUrl) {
+      // Fallback for external URLs stored directly on the item
+      req.log.info({ imageUrl: item.imageUrl }, "Fetching image from external URL");
+      const imageResp = await fetch(item.imageUrl);
+      if (!imageResp.ok) throw new Error(`Failed to fetch image from URL: ${imageResp.status}`);
+      const imageBuffer = await imageResp.arrayBuffer();
+      base64Image = Buffer.from(imageBuffer).toString("base64");
+      mimeType = imageResp.headers.get("content-type") ?? "image/jpeg";
+    } else {
+      res.status(400).json({ error: "Item has no image to analyze" });
+      return;
+    }
 
     const response = await genai.models.generateContent({
       model: "gemini-2.5-flash",
