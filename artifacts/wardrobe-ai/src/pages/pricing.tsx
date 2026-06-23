@@ -71,7 +71,7 @@ export default function Pricing() {
             </div>
             
             <ul className="space-y-4 mb-8 flex-1">
-              <FeatureItem>Up to 50 clothing items</FeatureItem>
+              <FeatureItem>Up to 15 clothing items</FeatureItem>
               <FeatureItem>Basic AI outfit recommendations</FeatureItem>
               <FeatureItem>Weather suggestions</FeatureItem>
               <FeatureItem>Outfit history</FeatureItem>
@@ -165,7 +165,7 @@ export default function Pricing() {
                 </tr>
               </thead>
               <tbody>
-                <TableRow feature="Clothing items" free="Up to 50" plus="Unlimited" founder="Unlimited" />
+                <TableRow feature="Clothing items" free="Up to 15" plus="Unlimited" founder="Unlimited" />
                 <TableRow feature="AI Outfit Recommendations" free="Basic" plus="Advanced" founder="Advanced" />
                 <TableRow feature="Occasion Filters" free="-" plus={<Check className="w-5 h-5 text-primary mx-auto" />} founder={<Check className="w-5 h-5 text-primary mx-auto" />} />
                 <TableRow feature="Weather Suggestions" free={<Check className="w-5 h-5 text-primary mx-auto" />} plus={<Check className="w-5 h-5 text-primary mx-auto" />} founder={<Check className="w-5 h-5 text-primary mx-auto" />} />

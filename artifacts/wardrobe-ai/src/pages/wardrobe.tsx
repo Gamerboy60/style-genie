@@ -120,14 +120,14 @@ export default function Wardrobe() {
       </div>
 
       {/* Upgrade Banner */}
-      {items && items.length >= 50 && (
+      {items && items.length >= 15 && (
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 mb-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-background p-3 rounded-full shadow-sm">
               <Crown className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-foreground">You've reached the 50-item limit on the Free plan</h3>
+              <h3 className="font-semibold text-lg text-foreground">You've reached the 15-item limit on the Free plan</h3>
               <p className="text-muted-foreground">Upgrade to Plus for unlimited items, advanced styling, and packing lists.</p>
             </div>
           </div>
