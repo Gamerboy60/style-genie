@@ -7,13 +7,11 @@ import {
   GenerateOutfitBody,
   DeleteOutfitParams,
 } from "@workspace/api-zod";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
 const router = Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 function toClothingItemResponse(item: typeof clothingItems.$inferSelect) {
   return {
@@ -109,13 +107,13 @@ router.post("/outfits/generate", async (req, res) => {
 
     const count = parsed.data.count ?? 3;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      max_completion_tokens: 1024,
-      messages: [
+    const response = await genai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
         {
-          role: "user",
-          content: `You are a personal stylist. Create ${count} outfit suggestion(s) from this wardrobe.
+          parts: [
+            {
+              text: `You are a personal stylist. Create ${count} outfit suggestion(s) from this wardrobe.
 ${filters ? `Preferences: ${filters}` : ""}
 
 Available clothing items:
@@ -128,11 +126,14 @@ Return a JSON array with ${count} outfit(s). Each outfit must have:
 - style: the style name for this outfit
 
 Only use IDs from the list above. Return only valid JSON array, no markdown.`,
+            },
+          ],
         },
       ],
     });
 
-    const content = response.choices[0]?.message?.content ?? "[]";
+    const raw = response.text ?? "[]";
+    const content = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     let suggestions: Array<{ clothingItemIds: number[]; reasoning: string; occasion: string; style: string }> = [];
     try {
       suggestions = JSON.parse(content);

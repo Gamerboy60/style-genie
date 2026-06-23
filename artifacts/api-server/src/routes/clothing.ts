@@ -10,13 +10,11 @@ import {
   DeleteClothingItemParams,
   AnalyzeClothingItemParams,
 } from "@workspace/api-zod";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
 const router = Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 function toClothingItemResponse(item: typeof clothingItems.$inferSelect) {
   return {
@@ -162,19 +160,20 @@ router.post("/clothing/:id/analyze", async (req, res) => {
       ? `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "http://localhost:80"}/api/storage${item.imagePath}`
       : item.imageUrl;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      max_completion_tokens: 512,
-      messages: [
+    // Fetch image and convert to base64 for Gemini inline data
+    const imageResp = await fetch(imageUrl);
+    if (!imageResp.ok) throw new Error(`Failed to fetch image: ${imageResp.status}`);
+    const imageBuffer = await imageResp.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString("base64");
+    const mimeType = imageResp.headers.get("content-type") ?? "image/jpeg";
+
+    const response = await genai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
         {
-          role: "user",
-          content: [
+          parts: [
+            { inlineData: { mimeType, data: base64Image } },
             {
-              type: "image_url",
-              image_url: { url: imageUrl, detail: "low" },
-            },
-            {
-              type: "text",
               text: `Analyze this clothing item and return a JSON object with these fields:
 - color: main color(s) as a short string (e.g. "navy blue", "white", "black/white stripe")
 - style: style descriptor (e.g. "casual", "formal", "streetwear", "preppy", "minimalist", "bohemian")
@@ -188,7 +187,8 @@ Return only valid JSON, no markdown.`,
       ],
     });
 
-    const content = response.choices[0]?.message?.content ?? "{}";
+    const raw = response.text ?? "{}";
+    const content = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     let analysis: { color?: string; style?: string; occasion?: string; season?: string } = {};
     try {
       analysis = JSON.parse(content);
