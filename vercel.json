@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd artifacts/wardrobe-ai && pnpm build",
-  "outputDirectory": "artifacts/wardrobe-ai/dist/public"
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/public"
 }
