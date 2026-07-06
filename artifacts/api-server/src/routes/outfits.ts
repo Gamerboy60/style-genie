@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { clothingItems, outfits, outfitItems } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import {
   CreateOutfitBody,
   GenerateOutfitBody,
   DeleteOutfitParams,
 } from "@workspace/api-zod";
 import { GoogleGenAI } from "@google/genai";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -42,9 +43,14 @@ async function getOutfitWithItems(outfitId: number) {
   };
 }
 
-router.get("/outfits", async (req, res) => {
+router.get("/outfits", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   try {
-    const allOutfits = await db.select().from(outfits).orderBy(outfits.createdAt);
+    const allOutfits = await db
+      .select()
+      .from(outfits)
+      .where(eq(outfits.userId, userId))
+      .orderBy(outfits.createdAt);
     const results = await Promise.all(allOutfits.map((o) => getOutfitWithItems(o.id)));
     res.json(results.filter(Boolean));
   } catch (err) {
@@ -53,7 +59,8 @@ router.get("/outfits", async (req, res) => {
   }
 });
 
-router.post("/outfits", async (req, res) => {
+router.post("/outfits", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = CreateOutfitBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request body" });
@@ -63,7 +70,7 @@ router.post("/outfits", async (req, res) => {
   try {
     const [outfit] = await db
       .insert(outfits)
-      .values({ name: parsed.data.name, occasion: parsed.data.occasion, notes: parsed.data.notes })
+      .values({ name: parsed.data.name, occasion: parsed.data.occasion, notes: parsed.data.notes, userId })
       .returning();
 
     if (parsed.data.clothingItemIds && parsed.data.clothingItemIds.length > 0) {
@@ -80,7 +87,8 @@ router.post("/outfits", async (req, res) => {
   }
 });
 
-router.post("/outfits/generate", async (req, res) => {
+router.post("/outfits/generate", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = GenerateOutfitBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request body" });
@@ -88,7 +96,7 @@ router.post("/outfits/generate", async (req, res) => {
   }
 
   try {
-    const allItems = await db.select().from(clothingItems);
+    const allItems = await db.select().from(clothingItems).where(eq(clothingItems.userId, userId));
 
     if (allItems.length < 2) {
       res.json([]);
@@ -160,7 +168,8 @@ Only use IDs from the list above. Return only valid JSON array, no markdown.`,
   }
 });
 
-router.delete("/outfits/:id", async (req, res) => {
+router.delete("/outfits/:id", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = DeleteOutfitParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -168,6 +177,14 @@ router.delete("/outfits/:id", async (req, res) => {
   }
 
   try {
+    const [existing] = await db
+      .select()
+      .from(outfits)
+      .where(and(eq(outfits.id, parsed.data.id), eq(outfits.userId, userId)));
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
     await db.delete(outfitItems).where(eq(outfitItems.outfitId, parsed.data.id));
     await db.delete(outfits).where(eq(outfits.id, parsed.data.id));
     res.status(204).send();

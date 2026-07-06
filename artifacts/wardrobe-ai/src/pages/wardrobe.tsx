@@ -101,7 +101,7 @@ export default function Wardrobe() {
                 {generatedOutfit.reasoning || "Here is your perfect outfit for the day."}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {generatedOutfit.items?.map((item) => (
+                {generatedOutfit.clothingItems?.map((item) => (
                   <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-secondary border border-border">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />

@@ -1,6 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { Shirt, Sparkles, LayoutGrid, BarChart2, Crown } from "lucide-react";
+import { Shirt, Sparkles, LayoutGrid, BarChart2, Crown, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useClerk, useUser } from "@clerk/react";
+import { Button } from "@/components/ui/button";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,9 +12,11 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
+  const { signOut } = useClerk();
+  const { user } = useUser();
 
   const navItems = [
-    { href: "/", label: "Wardrobe", icon: Shirt },
+    { href: "/wardrobe", label: "Wardrobe", icon: Shirt },
     { href: "/analyze", label: "Analyze", icon: Sparkles },
     { href: "/outfits", label: "Outfits", icon: LayoutGrid },
     { href: "/stats", label: "Stats", icon: BarChart2 },
@@ -51,6 +57,43 @@ export function Layout({ children }: LayoutProps) {
               </Link>
             );
           })}
+        </div>
+
+        <div className="mt-auto hidden md:block">
+          <div className="border-t border-border/60 pt-4">
+            {user && (
+              <div className="flex items-center gap-3 px-2 mb-3">
+                <div className="bg-primary/10 p-1.5 rounded-full shrink-0">
+                  {user.imageUrl ? (
+                    <img
+                      src={user.imageUrl}
+                      alt={user.firstName ?? "User"}
+                      className="w-5 h-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-4 h-4 text-primary" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {user.firstName ?? user.emailAddresses[0]?.emailAddress?.split("@")[0]}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user.emailAddresses[0]?.emailAddress}
+                  </p>
+                </div>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground px-2"
+              onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </Button>
+          </div>
         </div>
       </nav>
 

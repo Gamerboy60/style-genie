@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { clothingItems } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   CreateClothingItemBody,
   UpdateClothingItemBody,
@@ -12,6 +12,7 @@ import {
 } from "@workspace/api-zod";
 import { GoogleGenAI } from "@google/genai";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -25,9 +26,10 @@ function toClothingItemResponse(item: typeof clothingItems.$inferSelect) {
   };
 }
 
-router.get("/clothing/stats", async (req, res) => {
+router.get("/clothing/stats", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   try {
-    const items = await db.select().from(clothingItems);
+    const items = await db.select().from(clothingItems).where(eq(clothingItems.userId, userId));
 
     const byCategory: Record<string, number> = {};
     const byColor: Record<string, number> = {};
@@ -52,9 +54,14 @@ router.get("/clothing/stats", async (req, res) => {
   }
 });
 
-router.get("/clothing", async (req, res) => {
+router.get("/clothing", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   try {
-    const items = await db.select().from(clothingItems).orderBy(clothingItems.createdAt);
+    const items = await db
+      .select()
+      .from(clothingItems)
+      .where(eq(clothingItems.userId, userId))
+      .orderBy(clothingItems.createdAt);
     res.json(items.map(toClothingItemResponse));
   } catch (err) {
     req.log.error({ err }, "Failed to list clothing items");
@@ -62,7 +69,8 @@ router.get("/clothing", async (req, res) => {
   }
 });
 
-router.post("/clothing", async (req, res) => {
+router.post("/clothing", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = CreateClothingItemBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request body" });
@@ -70,7 +78,7 @@ router.post("/clothing", async (req, res) => {
   }
 
   try {
-    const [item] = await db.insert(clothingItems).values(parsed.data).returning();
+    const [item] = await db.insert(clothingItems).values({ ...parsed.data, userId }).returning();
     res.status(201).json(toClothingItemResponse(item));
   } catch (err) {
     req.log.error({ err }, "Failed to create clothing item");
@@ -78,7 +86,8 @@ router.post("/clothing", async (req, res) => {
   }
 });
 
-router.get("/clothing/:id", async (req, res) => {
+router.get("/clothing/:id", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = GetClothingItemParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -86,7 +95,10 @@ router.get("/clothing/:id", async (req, res) => {
   }
 
   try {
-    const [item] = await db.select().from(clothingItems).where(eq(clothingItems.id, parsed.data.id));
+    const [item] = await db
+      .select()
+      .from(clothingItems)
+      .where(and(eq(clothingItems.id, parsed.data.id), eq(clothingItems.userId, userId)));
     if (!item) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -98,7 +110,8 @@ router.get("/clothing/:id", async (req, res) => {
   }
 });
 
-router.patch("/clothing/:id", async (req, res) => {
+router.patch("/clothing/:id", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const paramsParsed = UpdateClothingItemParams.safeParse({ id: Number(req.params.id) });
   if (!paramsParsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -115,7 +128,7 @@ router.patch("/clothing/:id", async (req, res) => {
     const [item] = await db
       .update(clothingItems)
       .set(bodyParsed.data)
-      .where(eq(clothingItems.id, paramsParsed.data.id))
+      .where(and(eq(clothingItems.id, paramsParsed.data.id), eq(clothingItems.userId, userId)))
       .returning();
     if (!item) {
       res.status(404).json({ error: "Not found" });
@@ -128,7 +141,8 @@ router.patch("/clothing/:id", async (req, res) => {
   }
 });
 
-router.delete("/clothing/:id", async (req, res) => {
+router.delete("/clothing/:id", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = DeleteClothingItemParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -136,7 +150,9 @@ router.delete("/clothing/:id", async (req, res) => {
   }
 
   try {
-    await db.delete(clothingItems).where(eq(clothingItems.id, parsed.data.id));
+    await db
+      .delete(clothingItems)
+      .where(and(eq(clothingItems.id, parsed.data.id), eq(clothingItems.userId, userId)));
     res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "Failed to delete clothing item");
@@ -144,7 +160,8 @@ router.delete("/clothing/:id", async (req, res) => {
   }
 });
 
-router.post("/clothing/:id/analyze", async (req, res) => {
+router.post("/clothing/:id/analyze", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const parsed = AnalyzeClothingItemParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -152,7 +169,10 @@ router.post("/clothing/:id/analyze", async (req, res) => {
   }
 
   try {
-    const [item] = await db.select().from(clothingItems).where(eq(clothingItems.id, parsed.data.id));
+    const [item] = await db
+      .select()
+      .from(clothingItems)
+      .where(and(eq(clothingItems.id, parsed.data.id), eq(clothingItems.userId, userId)));
     if (!item) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -162,8 +182,6 @@ router.post("/clothing/:id/analyze", async (req, res) => {
     let mimeType: string;
 
     if (item.imagePath) {
-      // Read directly from object storage — avoids any HTTP round-trip and works
-      // identically in dev and production regardless of domain/port differences.
       req.log.info({ imagePath: item.imagePath }, "Loading image from object storage");
       const objectFile = await objectStorageService.getObjectEntityFile(item.imagePath);
       const [metadata] = await objectFile.getMetadata();
@@ -180,7 +198,6 @@ router.post("/clothing/:id/analyze", async (req, res) => {
       base64Image = imageBuffer.toString("base64");
       req.log.info({ bytes: imageBuffer.length, mimeType }, "Image loaded from storage");
     } else if (item.imageUrl) {
-      // Fallback for external URLs stored directly on the item
       req.log.info({ imageUrl: item.imageUrl }, "Fetching image from external URL");
       const imageResp = await fetch(item.imageUrl);
       if (!imageResp.ok) throw new Error(`Failed to fetch image from URL: ${imageResp.status}`);
@@ -230,7 +247,7 @@ Return only valid JSON, no markdown.`,
         season: analysis.season ?? item.season,
         analyzed: true,
       })
-      .where(eq(clothingItems.id, parsed.data.id))
+      .where(and(eq(clothingItems.id, parsed.data.id), eq(clothingItems.userId, userId)))
       .returning();
 
     res.json(toClothingItemResponse(updated));
