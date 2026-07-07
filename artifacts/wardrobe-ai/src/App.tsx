@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -90,6 +91,7 @@ function SignInPage() {
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
+        forceRedirectUrl={`${basePath}/wardrobe`}
       />
     </div>
   );
@@ -102,6 +104,7 @@ function SignUpPage() {
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
+        forceRedirectUrl={`${basePath}/wardrobe`}
       />
     </div>
   );
@@ -131,6 +134,16 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
       </Show>
     </>
   );
+}
+
+function ClerkAuthTokenSetup() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    if (!import.meta.env.VITE_API_BASE_URL) return;
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return null;
 }
 
 function ClerkQueryClientCacheInvalidator() {
@@ -181,6 +194,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <ClerkAuthTokenSetup />
           <ClerkQueryClientCacheInvalidator />
           <Switch>
             <Route path="/" component={HomeRedirect} />
