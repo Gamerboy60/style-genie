@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCreateClothingItem, useRequestUploadUrl, getListClothingItemsQueryKey } from "@workspace/api-client-react";
+import { useCreateClothingItem, getListClothingItemsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,6 @@ export function UploadDialog() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const requestUrl = useRequestUploadUrl();
   const createItem = useCreateClothingItem();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,46 +37,43 @@ export function UploadDialog() {
     try {
       setIsUploading(true);
 
-      // 1. Get presigned URL
-      const { uploadURL, objectPath } = await requestUrl.mutateAsync({
-        data: {
-          name: file.name,
-          size: file.size,
-          contentType: file.type,
-        },
-      });
-
-      // 2. Upload file directly to URL
-      const uploadRes = await fetch(uploadURL, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
+      // 1. Upload file directly through our server (avoids GCS CORS issues)
+      const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+      const uploadRes = await fetch(`${apiBase}/api/storage/uploads`, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
         body: file,
+        credentials: "include",
       });
 
-      if (!uploadRes.ok) throw new Error("Failed to upload image");
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to upload image");
+      }
 
-      // 3. Create clothing item record
+      const { objectPath } = await uploadRes.json() as { objectPath: string };
+
+      // 2. Create clothing item record
       await createItem.mutateAsync({
         data: {
           name,
           category,
-          imageUrl: "", // We use objectPath instead
+          imageUrl: "",
           imagePath: objectPath,
         },
       });
 
       queryClient.invalidateQueries({ queryKey: getListClothingItemsQueryKey() });
       toast({ title: "Item added to wardrobe", description: "It will be analyzed shortly." });
-      
+
       setOpen(false);
       setFile(null);
       setPreview(null);
       setName("");
       setCategory("");
     } catch (error) {
-      toast({ title: "Upload failed", description: "There was a problem uploading your item.", variant: "destructive" });
+      const message = error instanceof Error ? error.message : "There was a problem uploading your item.";
+      toast({ title: "Upload failed", description: message, variant: "destructive" });
     } finally {
       setIsUploading(false);
     }

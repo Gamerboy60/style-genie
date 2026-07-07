@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response } from "express";
+import express, { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import {
   RequestUploadUrlBody,
@@ -6,9 +6,39 @@ import {
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
+
+/**
+ * POST /storage/uploads
+ *
+ * Upload a file directly through the server to object storage.
+ * Avoids browser→GCS CORS issues with presigned URLs.
+ * Headers: Content-Type (file mime type), X-File-Name (original filename)
+ * Body: raw binary file data
+ */
+router.post(
+  "/storage/uploads",
+  requireAuth,
+  express.raw({ type: "*/*", limit: "50mb" }),
+  async (req: Request, res: Response) => {
+    try {
+      const contentType = (req.headers["content-type"] as string) || "application/octet-stream";
+      const buffer = req.body as Buffer;
+      if (!buffer || buffer.length === 0) {
+        res.status(400).json({ error: "No file body received" });
+        return;
+      }
+      const objectPath = await objectStorageService.uploadObjectEntity(buffer, contentType);
+      res.json({ objectPath });
+    } catch (error) {
+      req.log.error({ err: error }, "Error uploading file");
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  }
+);
 
 /**
  * POST /storage/uploads/request-url
