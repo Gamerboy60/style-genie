@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm --filter @workspace/wardrobe-ai run build",
-  "outputDirectory": "artifacts/wardrobe-ai/dist/public",
+  "outputDirectory": "artifacts/wardrobe-ai/dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
