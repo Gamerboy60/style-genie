@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export default function Wardrobe() {
   const { data: items, isLoading } = useListClothingItems();
@@ -16,6 +17,7 @@ export default function Wardrobe() {
   const generateOutfit = useGenerateOutfit();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   
   const [occasion, setOccasion] = useState<string>("casual");
   const [weather, setWeather] = useState<string>("warm");
@@ -120,7 +122,7 @@ export default function Wardrobe() {
       </div>
 
       {/* Upgrade Banner */}
-      {items && items.length >= 15 && (
+      {!isAdmin && items && items.length >= 15 && (
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 mb-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-background p-3 rounded-full shadow-sm">
