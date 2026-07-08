@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@clerk/react";
 import { useCreateClothingItem, getListClothingItemsQueryKey } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function UploadDialog() {
   const [category, setCategory] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
+  const { getToken } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,17 +40,22 @@ export function UploadDialog() {
       setIsUploading(true);
 
       // 1. Upload file directly through our server (avoids GCS CORS issues)
-      const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+      // Get Clerk Bearer token so the request works cross-origin (Vercel→Replit)
+      // without relying on session cookies, which are domain-scoped.
+      const token = await getToken();
+      const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
       const uploadRes = await fetch(`${apiBase}/api/storage/uploads`, {
         method: "POST",
-        headers: { "Content-Type": file.type },
+        headers: {
+          "Content-Type": file.type,
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
         body: file,
-        credentials: "include",
       });
 
       if (!uploadRes.ok) {
         const err = await uploadRes.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to upload image");
+        throw new Error((err as { error?: string }).error ?? `Upload failed (HTTP ${uploadRes.status})`);
       }
 
       const { objectPath } = await uploadRes.json() as { objectPath: string };
